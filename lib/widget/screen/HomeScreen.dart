@@ -39,13 +39,12 @@ class _HomeScreenState extends State<HomeScreen> {
               distinct: true,
               converter: (store) => store.state.authentication,
               builder: (context, authentication) {
-                return Text(authentication.firebaseUser.displayName + " さん　ホームですよ〜");
+                return Text((authentication?.firebaseUser?.displayName ?? "") + " さん　ホームですよ〜");
               },
               onInit: (store) {
                 store.dispatch(CheckAuthStatusAction());
               },
             ),
-            //Text(_viewModel.displayName + " さん　ホームですよ〜"),
           ),
           drawer: new Drawer(
             child: ListView(
