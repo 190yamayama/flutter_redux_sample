@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_firebase_app/model/AuthStatus.dart';
 import 'package:flutter_firebase_app/model/Authentication.dart';
-import 'package:flutter_firebase_app/redux/state/AppState.dart';
-import 'package:flutter_firebase_app/redux/reducer/AppStateReducer.dart';
-import 'package:flutter_firebase_app/redux/action/Actions.dart';
 import 'package:flutter_firebase_app/redux/middleware/Authentication.dart';
+import 'package:flutter_firebase_app/redux/reducer/AppStateReducer.dart';
+import 'package:flutter_firebase_app/redux/state/AppState.dart';
+import 'package:flutter_firebase_app/redux/action/Actions.dart';
+import 'package:flutter_firebase_app/viewModel/SignUpScreenViewModel.dart';
 import 'package:flutter_firebase_app/widget/component/PrimaryButton.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:progress_dialog/progress_dialog.dart';
@@ -13,9 +14,7 @@ import 'package:redux/redux.dart';
 import 'HomeScreen.dart';
 
 class SignUpScreen extends StatefulWidget {
-  SignUpScreen({Key key, this.store, this.title}) : super(key: key);
-  final Store<AppState> store;
-  final String title;
+  SignUpScreen({Key key}) : super(key: key);
 
   static final formKey = new GlobalKey<FormState>();
 
@@ -25,7 +24,7 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
 
-  _ViewModel _viewModel;
+  SignUpScreenViewModel _viewModel;
 
   bool isValidate() {
     final form = SignUpScreen.formKey.currentState;
@@ -38,15 +37,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Store<AppState> store = Store<AppState>(
+      appReducer,
+      initialState: AppState.initState(),
+      middleware: [signUpMiddleware],
+    );
 
-    _viewModel = _ViewModel.fromStore(widget.store);
+    _viewModel = SignUpScreenViewModel.fromStore(store);
 
     final ProgressDialog progress = new ProgressDialog(context);
     return new StoreProvider(
-        store: widget.store,
+        store: store,
         child: new Scaffold(
             appBar: new AppBar(
-              title: new Text(widget.title),
+              title: new Text("Sign Up Screen"),
             ),
             backgroundColor: Colors.grey[300],
             body: new SingleChildScrollView(child: new Container(
@@ -68,7 +72,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             displayNameText(),
                                             emailText(),
                                             passwordText(),
-                                            singUpButton(widget.store, progress),
+                                            singUpButton(store, progress),
                                             signInButton(),
                                           ],
                                         )
@@ -97,10 +101,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Widget emailText() {
     return padded(child: new TextFormField(
-      key: new Key('email'),
-      decoration: new InputDecoration(labelText: 'Email'),
+      key: new Key("email"),
+      decoration: new InputDecoration(labelText: "Email"),
       autocorrect: false,
-      validator: (val) => val.isEmpty ? 'emailを入力してください' : null,
+      validator: (val) => val.isEmpty ? "emailを入力してください" : null,
       onSaved: (val) => {
         _viewModel.email = val
       },
@@ -109,11 +113,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Widget passwordText() {
     return padded(child: new TextFormField(
-      key: new Key('password'),
-      decoration: new InputDecoration(labelText: 'Password'),
+      key: new Key("password"),
+      decoration: new InputDecoration(labelText: "Password"),
       obscureText: true,
       autocorrect: false,
-      validator: (val) => val.isEmpty ? 'パスワードを入力してください' : null,
+      validator: (val) => val.isEmpty ? "パスワードを入力してください" : null,
       onSaved: (val) => {
         _viewModel.password = val
       },
@@ -126,8 +130,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       converter: (store) => store.state.authentication,
       builder: (context, authentication) {
         return new PrimaryButton(
-            key: new Key('singUp'),
-            text: 'サインアップ',
+            key: new Key("singUp"),
+            text: "サインアップ",
             height: 44.0,
             onPressed: () {
               if (!isValidate() || _viewModel.isEmpty()) {
@@ -147,7 +151,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
           return;
         }
         if (authentication.authStatus == AuthStatus.signedIn) {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new HomeScreen(store: widget.store, title: 'Home')));
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
           return;
         }
       },
@@ -156,7 +161,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Widget signInButton() {
     return new FlatButton(
-        key: new Key('signIn'),
+        key: new Key("signIn"),
         textColor: Colors.green,
         child: new Text(
             "既にアカウントをお持ちの方\n（サインイン）",
@@ -177,7 +182,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             return
               new Text(
                 authentication.errorMessage,
-                key: new Key('hint'),
+                key: new Key("hint"),
                 style: new TextStyle(fontSize: 18.0, color: Colors.grey),
                 textAlign: TextAlign.center
               );
@@ -194,30 +199,3 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 }
 
-class _ViewModel {
-  String displayName;
-  String email;
-  String password;
-
-  _ViewModel({
-    @required this.displayName,
-    @required this.email,
-    @required this.password,
-  });
-
-  bool isEmpty() {
-    if (displayName.isEmpty || email.isEmpty || password.isEmpty) {
-      return true;
-    }
-    return false;
-  }
-
-  static _ViewModel fromStore(Store<AppState> store) {
-    return _ViewModel(
-      displayName: store.state.authentication.firebaseUser?.displayName ?? "",
-      email: store.state.authentication.firebaseUser?.email ?? "",
-      password: "",
-    );
-  }
-
-}

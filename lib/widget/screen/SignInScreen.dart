@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_firebase_app/model/AuthStatus.dart';
 import 'package:flutter_firebase_app/model/Authentication.dart';
-import 'package:flutter_firebase_app/redux/state/AppState.dart';
-import 'package:flutter_firebase_app/redux/reducer/AppStateReducer.dart';
-import 'package:flutter_firebase_app/redux/action/Actions.dart';
 import 'package:flutter_firebase_app/redux/middleware/Authentication.dart';
+import 'package:flutter_firebase_app/redux/reducer/AppStateReducer.dart';
+import 'package:flutter_firebase_app/redux/state/AppState.dart';
+import 'package:flutter_firebase_app/redux/action/Actions.dart';
+import 'package:flutter_firebase_app/viewModel/SignInScreenViewModel.dart';
 import 'package:flutter_firebase_app/widget/component/PrimaryButton.dart';
 import 'package:flutter_firebase_app/widget/screen/HomeScreen.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -14,9 +15,7 @@ import 'package:redux/redux.dart';
 import 'SignUpScreen.dart';
 
 class SignInScreen extends StatefulWidget {
-  SignInScreen({Key key, this.store, this.title}) : super(key: key);
-  final Store<AppState> store;
-  final String title;
+  SignInScreen({Key key}) : super(key: key);
 
   static final formKey = new GlobalKey<FormState>();
 
@@ -26,7 +25,7 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
 
-  _ViewModel _viewModel;
+  SignInScreenViewModel _viewModel;
 
   bool validateAndSave() {
     final form = SignInScreen.formKey.currentState;
@@ -39,15 +38,20 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Store<AppState> store = Store<AppState>(
+      appReducer,
+      initialState: AppState.initState(),
+      middleware: [checkAuthStatusMiddleware, signInMiddleware],
+    );
 
-    _viewModel = _ViewModel.fromStore(widget.store);
+    _viewModel = SignInScreenViewModel.fromStore(store);
 
     final ProgressDialog progress = new ProgressDialog(context);
     return new StoreProvider(
-      store: widget.store,
+      store: store,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Login Screen'),
+          title: Text("Login Screen"),
         ),
         body: new Center(
           child: new Form(
@@ -60,7 +64,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     height: 200.0,
                     width: 200.0,
                     child: Image(
-                      image: AssetImage('assets/splash.png'),
+                      image: AssetImage("assets/splash.png"),
                       fit: BoxFit.fill,
                     ),
                   ),
@@ -74,7 +78,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               children: [
                                 emailText(),
                                 passwordText(),
-                                signInButton(widget.store, progress),
+                                signInButton(store, progress),
                                 signUpButton(),
                               ]
                           )
@@ -91,10 +95,10 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Widget emailText() {
     return padded(child: new TextFormField(
-      key: new Key('email'),
-      decoration: new InputDecoration(labelText: 'Email'),
+      key: new Key("email"),
+      decoration: new InputDecoration(labelText: "Email"),
       autocorrect: false,
-      validator: (val) => val.isEmpty ? 'emailを入力してください' : null,
+      validator: (val) => val.isEmpty ? "emailを入力してください" : null,
       onSaved: (val) => {
         _viewModel.email = val
       },
@@ -103,11 +107,11 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Widget passwordText() {
     return padded(child: new TextFormField(
-      key: new Key('password'),
-      decoration: new InputDecoration(labelText: 'Password'),
+      key: new Key("password"),
+      decoration: new InputDecoration(labelText: "Password"),
       obscureText: true,
       autocorrect: false,
-      validator: (val) => val.isEmpty ? 'パスワードを入力してください' : null,
+      validator: (val) => val.isEmpty ? "パスワードを入力してください" : null,
       onSaved: (val) => {
         _viewModel.password = val
       },
@@ -120,8 +124,8 @@ class _SignInScreenState extends State<SignInScreen> {
       converter: (store) => store.state.authentication,
       builder: (context, authentication) {
         return new PrimaryButton(
-            key: new Key('signIn'),
-            text: 'サインイン',
+            key: new Key("signIn"),
+            text: "サインイン",
             height: 44.0,
             onPressed: () {
               if (!validateAndSave() || _viewModel.isEmpty()) {
@@ -140,7 +144,8 @@ class _SignInScreenState extends State<SignInScreen> {
           return;
         }
         if (authentication.authStatus == AuthStatus.signedIn) {
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new HomeScreen(store: widget.store, title: 'Home')));
+          Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomeScreen()));
           return;
         }
       },
@@ -149,14 +154,14 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Widget signUpButton() {
     return new FlatButton(
-        key: new Key('need-account'),
+        key: new Key("need-account"),
         textColor: Colors.green,
         child: new Text(
             "初めて利用する方\n（サインアップ）",
             textAlign: TextAlign.center
         ),
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => new SignUpScreen(store: widget.store, title: 'SignUp')));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen()));
         }
     );
   }
@@ -172,7 +177,7 @@ class _SignInScreenState extends State<SignInScreen> {
           return
             new Text(
               authentication.errorMessage,
-              key: new Key('hint'),
+              key: new Key("hint"),
               style: new TextStyle(fontSize: 18.0, color: Colors.grey),
               textAlign: TextAlign.center
             );
@@ -187,29 +192,4 @@ class _SignInScreenState extends State<SignInScreen> {
       child: child,
     );
   }
-}
-
-class _ViewModel {
-  String email;
-  String password;
-
-  _ViewModel({
-    @required this.email,
-    @required this.password,
-  });
-
-  bool isEmpty() {
-    if (email.isEmpty || password.isEmpty) {
-      return true;
-    }
-    return false;
-  }
-
-  static _ViewModel fromStore(Store<AppState> store) {
-    return _ViewModel(
-      email: store.state.authentication.firebaseUser?.email ?? "",
-      password: "",
-    );
-  }
-
 }

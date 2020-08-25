@@ -43,10 +43,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final store = Store<AppState>(
+    Store<AppState> store = Store<AppState>(
       appReducer,
       initialState: AppState.initState(),
-      middleware: [checkAuthStatusMiddleware, signInMiddleware, signUpMiddleware, signOutMiddleware],
+      middleware: [checkAuthStatusMiddleware],
     );
 
     return new StoreProvider(
@@ -65,16 +65,26 @@ class _SplashScreenState extends State<SplashScreen> {
             onDidChange: (authentication) {
               Timer(Duration(seconds: 2), ()
               {
+                Navigator.of(context).popUntil((route) => route.isFirst);
                 // 置き換えて遷移する（backで戻れないように）
                 switch (authentication.authStatus) {
                   case AuthStatus.notSignedIn:
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new SignInScreen(store: store, title: 'SignIn'),),);
+                    Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => SignInScreen())
+                    );
                     break;
                   case AuthStatus.signedUp:
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new SignUpScreen(store: store, title: 'SignUp')));
+                    Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => SignUpScreen())
+                    );
                     break;
                   case AuthStatus.signedIn:
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new HomeScreen(store: store, title: 'Home')));
+                    Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomeScreen())
+                    );
                     break;
                   case AuthStatus.failed:
                     break;
