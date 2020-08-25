@@ -51,40 +51,38 @@ class _SplashScreenState extends State<SplashScreen> {
 
     return new StoreProvider(
       store: store,
-      child: MaterialApp(
-        home:  Scaffold(
-          body: Center(
-            child: StoreConnector<AppState, Authentication>(
-              distinct: true,
-              converter: (store) => store.state.authentication,
-              builder: (context, authState) {
-                return Image(image: AssetImage('assets/splash.png'));
-              },
-              onInit: (store) {
-                store.dispatch(CheckAuthStatusAction());
-              },
-              onDidChange: (authentication) {
-                Timer(Duration(seconds: 2), ()
-                {
-                  // 置き換えて遷移する（backで戻れないように）
-                  switch (authentication.authStatus) {
-                    case AuthStatus.notSignedIn:
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new SignInScreen(store: store, title: 'SignIn'),),);
-                      break;
-                    case AuthStatus.signedUp:
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new SignUpScreen(store: store, title: 'SignUp')));
-                      break;
-                    case AuthStatus.signedIn:
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new HomeScreen(store: store, title: 'Home')));
-                      break;
-                    case AuthStatus.failed:
-                      break;
-                    case AuthStatus.initState:
-                      break;
-                  }
-                });
-              },
-            ),
+      child:Scaffold(
+        body: Center(
+          child: StoreConnector<AppState, Authentication>(
+            distinct: true,
+            converter: (store) => store.state.authentication,
+            builder: (context, authState) {
+              return Image(image: AssetImage('assets/splash.png'));
+            },
+            onInit: (store) {
+              store.dispatch(CheckAuthStatusAction());
+            },
+            onDidChange: (authentication) {
+              Timer(Duration(seconds: 2), ()
+              {
+                // 置き換えて遷移する（backで戻れないように）
+                switch (authentication.authStatus) {
+                  case AuthStatus.notSignedIn:
+                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new SignInScreen(store: store, title: 'SignIn'),),);
+                    break;
+                  case AuthStatus.signedUp:
+                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new SignUpScreen(store: store, title: 'SignUp')));
+                    break;
+                  case AuthStatus.signedIn:
+                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => new HomeScreen(store: store, title: 'Home')));
+                    break;
+                  case AuthStatus.failed:
+                    break;
+                  case AuthStatus.initState:
+                    break;
+                }
+              });
+            },
           ),
         ),
       ),
